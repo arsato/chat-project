@@ -1,13 +1,9 @@
-import React from "react";
+import React, { useContext } from "react";
 import LoginCard from "../cards/LoginCard";
-import { useState } from "react";
-import io from "socket.io-client";
-
-const socket = io.connect("http://localhost:4000");
+import Context from "../../Context";
 
 const Login = () => {
-    const [username, setUsername] = useState("");
-    const [room, setRoom] = useState("");
+    const { username, setUsername, room, setRoom, socket } = useContext(Context);
 
     return (
         <div className="flex items-center justify-center h-screen bg-gray-100">
