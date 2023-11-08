@@ -13,7 +13,6 @@ const saveMessageToDB = async (message) => {
         );
         console.log("enviando: ", message);
         newMessage = await messagesCollection.insertOneAndGet(message);
-        console.log(newMessage);
         result = {
             id: newMessage.key,
             createdOn: newMessage.createdOn,

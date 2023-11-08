@@ -1,18 +1,16 @@
 import ChatRouter from "./components/router/ChatRouter";
 import React, { useState } from "react";
-import io from "socket.io-client";
-import Context from "./Context";
+import Context, { socket } from "./Context";
 
 function App() {
     const [username, setUsername] = useState("");
     const [room, setRoom] = useState("");
-
-    const socket = io.connect("http://localhost:4000");
+    const [roomUsers, setRoomUsers] = useState([]);
 
     return (
         <>
             <Context.Provider
-                value={{ username, setUsername, room, setRoom, socket }}
+                value={{ username, setUsername, room, setRoom, socket, roomUsers, setRoomUsers }}
             >
                 <ChatRouter />
             </Context.Provider>

@@ -1,4 +1,5 @@
 const oracledb = require("oracledb");
+const formatDate = require("../utils/format-date")
 
 const MESSAGES_COLLECTION = "messages";
 
@@ -20,6 +21,7 @@ const getMessages = async (room) => {
             result.push({
                 id: element.key,
                 createdOn: element.createdOn,
+                messageDate: formatDate(element.createdOn),
                 ...element.getContent(),
             });
         });
@@ -34,6 +36,7 @@ const getMessages = async (room) => {
             }
         }
     }
+    console.log(result);
     return result;
 };
 

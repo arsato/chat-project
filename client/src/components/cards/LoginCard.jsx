@@ -6,10 +6,12 @@ const LoginCard = ({ username, setUsername, room, setRoom, socket }) => {
 
     const joinRoom = () => {
         if (username != "" && room != "") {
-            socket.emit("join_room", { username, room });
+            let socketId = socket.id;
+            socket.emit("join_room", { username, room, socketId });
         }
         navigate("/chat");
     };
+
     return (
         <div className="w-full max-w-xs">
             <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -58,7 +60,7 @@ const LoginCard = ({ username, setUsername, room, setRoom, socket }) => {
                 </div>
                 <div className="flex items-center justify-between">
                     <button
-                        className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        className="w-full bg-cyan-500 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                         type="button"
                         onClick={joinRoom}
                     >

@@ -7,7 +7,7 @@ const Login = () => {
         useContext(Context);
 
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="flex items-center justify-center h-screen bg-gray-300">
             <LoginCard
                 username={username}
                 setUsername={setUsername}

@@ -1,53 +1,18 @@
 const express = require("express");
-const oracledb = require("oracledb");
-const app = express();
-const http = require("http");
+const {setApp, ioServer, createServer} = require("./server/config")
 const cors = require("cors");
-const { Server } = require("socket.io");
 const saveMessageToDB = require("./services/save-message");
 const getMessages = require("./services/get-messages");
 const leaveRoom = require("./utils/leave-room");
-const { Socket } = require("dgram");
-require("dotenv").config();
+const formatDate = require("./utils/format-date");
+require("./database")
 
-oracledb.outFormat = oracledb.OBJECT;
-oracledb.fetchAsString = [oracledb.CLOB];
-oracledb.initOracleClient({
-    libDir: "C:\\oracle\\instantclient_21_11",
-    configDir: "C:\\oracle\\instantclient_21_11\\network\\admin",
-});
-oracledb.autoCommit = true;
-
-const init = async () => {
-    try {
-        console.log("Creando pool de conexiones...");
-        await oracledb.createPool({
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            connectString: process.env.CONNECT_STRING,
-        });
-        console.log("Pool de conexiones creado.");
-    } catch (e) {
-        console.log("Error en conexion: ");
-        console.log(e);
-    }
-};
-
-init();
-
+const app = setApp(express());
 app.use(cors());
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"],
-    },
-});
+const server = createServer(app);
+const io = ioServer(server);
 
 const CHAT_BOT = "ChatBot";
-
 let chatRoom = "";
 let allUsers = [];
 
@@ -55,15 +20,15 @@ io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`);
 
     socket.on("join_room", (data) => {
-        const { username, room } = data;
+        const { username, room} = data;
         socket.join(room);
-
         chatRoom = room;
         allUsers.push({ id: socket.id, username, room });
         chatRoomUsers = allUsers.filter((user) => user.room === room);
 
         const timeElapsed = Date.now();
         let createdOn = new Date(timeElapsed);
+        let messageDate = formatDate(createdOn);
 
         socket.to(room).emit("chatroom_users", chatRoomUsers);
 
@@ -74,7 +39,8 @@ io.on("connection", (socket) => {
             {
                 message: `${username} has joined the chat room`,
                 username: CHAT_BOT,
-                createdOn: createdOn,
+                createdOn,
+                messageDate,
             },
             chatRoomUsers
         );
@@ -84,7 +50,8 @@ io.on("connection", (socket) => {
             {
                 message: `Welcome ${username}`,
                 username: CHAT_BOT,
-                createdOn: createdOn,
+                createdOn,
+                messageDate,
             },
             chatRoomUsers
         );
@@ -97,10 +64,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send_message", (data) => {
-        const { message, username, room, createdOn } = data;
-        console.log("data: ", data);
-        let sent = { message, username, room };
-        io.in(room).emit("receive_message", data);
+        const timeElapsed = Date.now();
+        let createdOn = new Date(timeElapsed);
+        let messageDate = formatDate(createdOn);
+
+        const { message, username, room, socketId } = data;
+        let sent = { message, username, room, socketId, messageDate, createdOn };
+        io.in(room).emit("receive_message", sent);
         saveMessageToDB(sent)
             .then((response) => console.log(response))
             .catch((error) => console.log(error));
@@ -111,12 +81,15 @@ io.on("connection", (socket) => {
         socket.leave(room);
         const timeElapsed = Date.now();
         let createdOn = new Date(timeElapsed);
+        let messageDate = formatDate(createdOn);
+
         allUsers = leaveRoom(socket.id, allUsers);
         socket.to(room).emit("chatroom_users", allUsers);
         socket.to(room).emit("receive_message", {
             message: `${username} has left the chat room`,
             username: CHAT_BOT,
             createdOn,
+            messageDate,
         });
         console.log(`${username} has left the chat room`);
     });
@@ -134,6 +107,6 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(4000, () => {
-    console.log("Server is running on port 4000");
+server.listen(app.get("port"), () => {
+    console.log("Server is running on port", app.get("port"));
 });
